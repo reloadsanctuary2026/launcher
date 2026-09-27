@@ -168,7 +168,7 @@
     <!-- STEP 1: NIK -->
     <div id="stepNik" class="login-card">
       <label for="nikInput">Masukkan NIK</label>
-      <input id="nikInput" type="text" inputmode="numeric" placeholder="Contoh: 1046" autofocus>
+      <input id="nikInput" type="text" inputmode="numeric" placeholder="Contoh: 1046" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus>
       <button id="btnNik">Lanjut</button>
       <div class="error-msg" id="errNik"></div>
     </div>
@@ -176,7 +176,7 @@
     <!-- STEP 2: PIN -->
     <div id="stepPin" class="login-card hidden">
       <label for="pinInput">Masukkan PIN</label>
-      <input id="pinInput" type="password" inputmode="numeric" placeholder="••••">
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="••••" autocomplete="new-password">
       <button id="btnPin">Login</button>
       <div class="error-msg" id="errPin"></div>
       <span class="back-link" id="backToNik">← ganti NIK</span>
@@ -189,6 +189,23 @@
         <div class="role" id="tierOut"></div>
       </div>
       <div class="grid" id="menuGrid"></div>
+
+      <div id="addToolBox" class="hidden" style="margin-top:20px;">
+        <span class="back-link" id="showAddForm" style="text-decoration:none; color:var(--accent); font-weight:600;">+ Tambah Link</span>
+        <div id="addToolForm" class="login-card hidden" style="margin-top:12px; text-align:left;">
+          <label for="toolName">Nama Tool</label>
+          <input id="toolName" type="text" placeholder="Contoh: Jadwal Cleaning">
+          <label for="toolUrl">Link (URL)</label>
+          <input id="toolUrl" type="text" placeholder="https://...">
+          <label style="display:flex; align-items:center; gap:8px; font-family:'Poppins',sans-serif; font-size:13px; text-transform:none; color:var(--text); margin-bottom:18px;">
+            <input type="checkbox" id="toolStaffVisible" style="width:auto; margin:0;">
+            Bisa dilihat Staff juga
+          </label>
+          <button id="btnAddTool">Simpan Link</button>
+          <div class="error-msg" id="errAddTool"></div>
+        </div>
+      </div>
+
       <span class="logout" id="logoutLink">Logout</span>
     </div>
   </div>
@@ -197,17 +214,16 @@
   // TODO: paste the Apps Script Web App /exec URL here after deploying Code.gs
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKdkdGgd-JP5XELrcQJ28kJln-8lOvjYfmS4OgM0u7Jg6GfTD34qHlrh030JwqXT7maw/exec';
 
-  const TOOLS = [
-    { name: 'Reload 360',       url: 'https://reloadsanctuary2026.github.io/fnbappraisal/', staffVisible: true  },
-    { name: 'Daily Consumption',url: 'https://reloadsanctuary2026.github.io/dailyconsumption/', staffVisible: true },
-    { name: 'LMS',              url: 'https://script.google.com/macros/s/AKfycbx7ID6GZMXYoj8ymmwAcGuxHWb-hGli-FRDqcDgazgIL38JOT4jbARBht85PFosc34a_Q/exec', staffVisible: true },
-    { name: 'BA Generator',     url: 'https://reloadsanctuary2026.github.io/beritaacara/', staffVisible: false },
-    { name: 'Auto Section',     url: 'https://reloadsanctuary2026.github.io/autosection/', staffVisible: false },
-    { name: 'QR Generator',     url: 'https://reloadsanctuary2026.github.io/qrgenerator/', staffVisible: false },
-    { name: 'Upsell Tracker',   url: 'https://reload-upsell-tracker.adiwijaya2807.chatgpt.site/tracker-v12', staffVisible: false }
-  ];
-
   let currentNik = '';
+  let currentPin = '';
+  let currentTier = '';
+
+  // Defensive: some browsers still inject a saved value before our JS runs.
+  window.addEventListener('load', () => {
+    nikInput.value = '';
+    pinInput.value = '';
+  });
+
 
   const stepNik = document.getElementById('stepNik');
   const stepPin = document.getElementById('stepPin');
@@ -255,7 +271,8 @@
         return;
       }
 
-      showMenu(data);
+      currentPin = pin; // kept in memory only, needed to re-auth "Tambah Link"
+      await showMenu(data);
     } catch (err) {
       errPin.textContent = 'Gagal konek ke server. Coba lagi.';
       btn.disabled = false;
@@ -263,18 +280,17 @@
     }
   });
 
-  function showMenu(user) {
-    stepPin.classList.add('hidden');
-    stepMenu.classList.remove('hidden');
-    document.getElementById('nicknameOut').textContent = user.nickname || '-';
-    document.getElementById('tierOut').textContent = (user.tier || 'Staff').toUpperCase();
+  async function fetchTools() {
+    const body = new URLSearchParams({ action: 'getTools' });
+    const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body });
+    const data = await res.json();
+    return data.success ? data.tools : [];
+  }
 
-    const isStaff = (user.tier || '').trim().toLowerCase() === 'staff';
-    const visibleTools = isStaff ? TOOLS.filter(t => t.staffVisible) : TOOLS;
-
+  function renderTools(tools) {
     const grid = document.getElementById('menuGrid');
     grid.innerHTML = '';
-    visibleTools.forEach((tool, i) => {
+    tools.forEach((tool, i) => {
       const a = document.createElement('a');
       a.className = 'card';
       a.href = tool.url;
@@ -289,12 +305,79 @@
     });
   }
 
+  async function showMenu(user) {
+    stepPin.classList.add('hidden');
+    stepMenu.classList.remove('hidden');
+    document.getElementById('nicknameOut').textContent = user.nickname || '-';
+    document.getElementById('tierOut').textContent = (user.tier || 'Staff').toUpperCase();
+    currentTier = (user.tier || '').trim().toLowerCase();
+
+    const allTools = await fetchTools();
+    const isStaff = currentTier === 'staff';
+    renderTools(isStaff ? allTools.filter(t => t.staffVisible) : allTools);
+
+    // "Tambah Link" is hidden for Staff
+    document.getElementById('addToolBox').classList.toggle('hidden', isStaff);
+  }
+
+  document.getElementById('showAddForm').addEventListener('click', () => {
+    document.getElementById('addToolForm').classList.toggle('hidden');
+  });
+
+  document.getElementById('btnAddTool').addEventListener('click', async () => {
+    const name = document.getElementById('toolName').value.trim();
+    const url = document.getElementById('toolUrl').value.trim();
+    const staffVisible = document.getElementById('toolStaffVisible').checked;
+    const errAdd = document.getElementById('errAddTool');
+    errAdd.textContent = '';
+
+    if (!name || !url) { errAdd.textContent = 'Nama dan URL wajib diisi'; return; }
+
+    const btn = document.getElementById('btnAddTool');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    try {
+      const body = new URLSearchParams({
+        action: 'addTool',
+        nik: currentNik,
+        pin: currentPin,
+        name, url,
+        staffVisible: String(staffVisible)
+      });
+      const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body });
+      const data = await res.json();
+
+      if (!data.success) {
+        errAdd.textContent = data.message || 'Gagal menyimpan link';
+        btn.disabled = false;
+        btn.textContent = 'Simpan Link';
+        return;
+      }
+
+      const isStaff = currentTier === 'staff';
+      renderTools(isStaff ? data.tools.filter(t => t.staffVisible) : data.tools);
+
+      document.getElementById('toolName').value = '';
+      document.getElementById('toolUrl').value = '';
+      document.getElementById('toolStaffVisible').checked = false;
+      document.getElementById('addToolForm').classList.add('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Simpan Link';
+    } catch (err) {
+      errAdd.textContent = 'Gagal konek ke server. Coba lagi.';
+      btn.disabled = false;
+      btn.textContent = 'Simpan Link';
+    }
+  });
+
   document.getElementById('logoutLink').addEventListener('click', () => {
     stepMenu.classList.add('hidden');
     stepNik.classList.remove('hidden');
     nikInput.value = '';
     pinInput.value = '';
     currentNik = '';
+    currentPin = '';
   });
 
   // Enter key support
