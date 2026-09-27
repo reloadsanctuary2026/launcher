@@ -261,7 +261,10 @@
 
     try {
       const body = new URLSearchParams({ action: 'login', nik: currentNik, pin: pin });
-      const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body, signal: controller.signal });
+      clearTimeout(timeoutId);
       const data = await res.json();
 
       if (!data.success) {
@@ -274,7 +277,9 @@
       currentPin = pin; // kept in memory only, needed to re-auth "Tambah Link"
       await showMenu(data);
     } catch (err) {
-      errPin.textContent = 'Gagal konek ke server. Coba lagi.';
+      errPin.textContent = err.name === 'AbortError'
+        ? 'Koneksi terlalu lama. Cek jaringan lo, lalu coba lagi.'
+        : 'Gagal konek ke server. Coba lagi.';
       btn.disabled = false;
       btn.textContent = 'Login';
     }
