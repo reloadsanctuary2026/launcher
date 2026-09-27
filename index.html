@@ -156,6 +156,18 @@
     cursor: pointer;
   }
   .hidden{ display:none !important; }
+  .mini-spinner{
+    display:inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(214,255,63,0.3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: mini-spin 0.7s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  @keyframes mini-spin{ to{ transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -220,7 +232,12 @@
   const RELOAD360_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbSrk4qrekr8P7p9jTA1SCGqZG-p2HK7fur4yyCvNsgzecI_hEHsbQrvOy_QhRrV82/exec';
   const RELOAD360_SSO_SECRET = '7c19ef2f5e7987c3be6d1584354da26206c6b1d7267b0df9e30f1743abd1944d';
 
-  async function openReload360Sso(reload360Url) {
+  async function openReload360Sso(reload360Url, cardEl) {
+    const goEl = cardEl ? cardEl.querySelector('.go') : null;
+    const originalGoText = goEl ? goEl.innerHTML : '';
+    if (goEl) goEl.innerHTML = '<span class="mini-spinner"></span>Membuka...';
+    if (cardEl) cardEl.style.pointerEvents = 'none';
+
     try {
       const ssoUrl = RELOAD360_APPS_SCRIPT_URL + '?action=requestSsoSession&staffId=' + encodeURIComponent(currentNik) + '&sharedSecret=' + encodeURIComponent(RELOAD360_SSO_SECRET);
       const res = await fetch(ssoUrl);
@@ -234,6 +251,9 @@
     } catch (err) {
       console.error(err);
       alert('Gagal konek ke Reload 360, coba lagi.');
+    } finally {
+      if (goEl) goEl.innerHTML = originalGoText;
+      if (cardEl) cardEl.style.pointerEvents = '';
     }
   }
 
@@ -333,7 +353,7 @@
         });
       } else if (isReload360Choice) {
         el.style.cursor = 'pointer';
-        el.addEventListener('click', () => openReload360Sso(tool.url));
+        el.addEventListener('click', () => openReload360Sso(tool.url, el));
       } else {
         el.href = tool.url;
         el.target = '_blank';
