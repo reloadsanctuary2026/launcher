@@ -190,6 +190,15 @@
       </div>
       <div class="grid" id="menuGrid"></div>
 
+      <div id="lmsModalOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:50;">
+        <div style="background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:24px; width:90%; max-width:360px;">
+          <h2 style="margin-bottom:16px;">LMS — mau ngapain?</h2>
+          <button id="lmsInputBtn" style="margin-bottom:10px;">Input LMS</button>
+          <button id="lmsViewBtn" style="background:var(--bg-panel); color:var(--text); border:1px solid var(--line);">Lihat LMS</button>
+          <span class="back-link" id="lmsModalClose" style="margin-top:14px;">Batal</span>
+        </div>
+      </div>
+
       <div id="addToolBox" class="hidden" style="margin-top:20px;">
         <span class="back-link" id="showAddForm" style="text-decoration:none; color:var(--accent); font-weight:600;">+ Tambah Link</span>
         <div id="addToolForm" class="login-card hidden" style="margin-top:12px; text-align:left;">
@@ -292,23 +301,47 @@
     return data.success ? data.tools : [];
   }
 
-  function renderTools(tools) {
+  const LMS_INPUT_URL = 'https://docs.google.com/spreadsheets/d/1ua0mUAldrzpDuoEHHqA8X_4MseaMLSHJvpPvtSwmGo8/edit?gid=1726101465#gid=1726101465';
+  let pendingLmsUrl = ''; // set right before opening the LMS modal
+
+  function renderTools(tools, isStaff) {
     const grid = document.getElementById('menuGrid');
     grid.innerHTML = '';
     tools.forEach((tool, i) => {
-      const a = document.createElement('a');
-      a.className = 'card';
-      a.href = tool.url;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.innerHTML = `
+      const isLmsChoice = tool.name === 'LMS' && !isStaff;
+      const el = document.createElement(isLmsChoice ? 'div' : 'a');
+      el.className = 'card';
+      if (isLmsChoice) {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => {
+          pendingLmsUrl = tool.url;
+          document.getElementById('lmsModalOverlay').classList.remove('hidden');
+        });
+      } else {
+        el.href = tool.url;
+        el.target = '_blank';
+        el.rel = 'noopener';
+      }
+      el.innerHTML = `
         <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted);">TOOL / ${String(i+1).padStart(2,'0')}</div>
         <h2>${tool.name}</h2>
         <div class="go">Buka tool →</div>
       `;
-      grid.appendChild(a);
+      grid.appendChild(el);
     });
   }
+
+  document.getElementById('lmsInputBtn').addEventListener('click', () => {
+    window.open(LMS_INPUT_URL, '_blank', 'noopener');
+    document.getElementById('lmsModalOverlay').classList.add('hidden');
+  });
+  document.getElementById('lmsViewBtn').addEventListener('click', () => {
+    window.open(pendingLmsUrl, '_blank', 'noopener');
+    document.getElementById('lmsModalOverlay').classList.add('hidden');
+  });
+  document.getElementById('lmsModalClose').addEventListener('click', () => {
+    document.getElementById('lmsModalOverlay').classList.add('hidden');
+  });
 
   async function showMenu(user) {
     stepPin.classList.add('hidden');
@@ -319,7 +352,7 @@
 
     const allTools = await fetchTools();
     const isStaff = currentTier === 'staff';
-    renderTools(isStaff ? allTools.filter(t => t.staffVisible) : allTools);
+    renderTools(isStaff ? allTools.filter(t => t.staffVisible) : allTools, isStaff);
 
     // "Tambah Link" is hidden for Staff
     document.getElementById('addToolBox').classList.toggle('hidden', isStaff);
@@ -361,7 +394,7 @@
       }
 
       const isStaff = currentTier === 'staff';
-      renderTools(isStaff ? data.tools.filter(t => t.staffVisible) : data.tools);
+      renderTools(isStaff ? data.tools.filter(t => t.staffVisible) : data.tools, isStaff);
 
       document.getElementById('toolName').value = '';
       document.getElementById('toolUrl').value = '';
