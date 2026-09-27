@@ -49,7 +49,6 @@
   }
   h1 span{ color: var(--accent); }
 
-  /* ---------- Login card ---------- */
   .login-card{
     background: var(--bg-panel);
     border: 1px solid var(--line);
@@ -111,7 +110,6 @@
     cursor: pointer;
   }
 
-  /* ---------- Welcome / menu ---------- */
   .welcome{
     text-align:center;
     margin-top: 40px;
@@ -165,7 +163,6 @@
     <div class="mark">Reload Sanctuary</div>
     <h1>Reload F&amp;B <span>Tools</span></h1>
 
-    <!-- STEP 1: NIK -->
     <div id="stepNik" class="login-card">
       <label for="nikInput">Masukkan NIK</label>
       <input id="nikInput" type="text" inputmode="numeric" placeholder="Contoh: 1046" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus>
@@ -173,7 +170,6 @@
       <div class="error-msg" id="errNik"></div>
     </div>
 
-    <!-- STEP 2: PIN -->
     <div id="stepPin" class="login-card hidden">
       <label for="pinInput">Masukkan PIN</label>
       <input id="pinInput" type="password" inputmode="numeric" placeholder="••••" autocomplete="new-password">
@@ -182,7 +178,6 @@
       <span class="back-link" id="backToNik">← ganti NIK</span>
     </div>
 
-    <!-- STEP 3: Welcome + Menu -->
     <div id="stepMenu" class="hidden">
       <div class="welcome">
         <div class="hi">Welcome, <span id="nicknameOut"></span>!</div>
@@ -220,19 +215,41 @@
   </div>
 
 <script>
-  // TODO: paste the Apps Script Web App /exec URL here after deploying Code.gs
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKdkdGgd-JP5XELrcQJ28kJln-8lOvjYfmS4OgM0u7Jg6GfTD34qHlrh030JwqXT7maw/exec';
+
+  // ====== SSO ke Reload 360 (BARU ditambahkan) ======
+  // Ganti PASTE_URL_WEBAPP_RELOAD360_DI_SINI di bawah dengan URL Web App Apps Script
+  // milik Reload 360 (BEDA dari APPS_SCRIPT_URL di atas, yang itu punya Launcher sendiri).
+  const RELOAD360_APPS_SCRIPT_URL = https://script.google.com/macros/s/AKfycbwbSrk4qrekr8P7p9jTA1SCGqZG-p2HK7fur4yyCvNsgzecI_hEHsbQrvOy_QhRrV82/exec;
+  // Secret ini HARUS SAMA PERSIS dengan LAUNCHER_SSO_SHARED_SECRET di Code_LIVE.gs Reload 360.
+  const RELOAD360_SSO_SECRET = '7c19ef2f5e7987c3be6d1584354da26206c6b1d7267b0df9e30f1743abd1944d';
+
+  async function openReload360Sso(reload360Url) {
+    try {
+      const url = `${RELOAD360_APPS_SCRIPT_URL}?action=requestSsoSession&staffId=${encodeURIComponent(currentNik)}&sharedSecret=${encodeURIComponent(RELOAD360_SSO_SECRET)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.success) {
+        alert('Gagal buka Reload 360: ' + (data.error || 'unknown error'));
+        return;
+      }
+      const target = reload360Url.includes('?') ? reload360Url + '&' : reload360Url + '?';
+      window.open(`${target}ssoToken=${encodeURIComponent(data.sessionToken)}&ssoStaffId=${encodeURIComponent(data.staffId)}`, '_blank', 'noopener');
+    } catch (err) {
+      console.error(err);
+      alert('Gagal konek ke Reload 360, coba lagi.');
+    }
+  }
+  // ====== akhir bagian SSO ======
 
   let currentNik = '';
   let currentPin = '';
   let currentTier = '';
 
-  // Defensive: some browsers still inject a saved value before our JS runs.
   window.addEventListener('load', () => {
     nikInput.value = '';
     pinInput.value = '';
   });
-
 
   const stepNik = document.getElementById('stepNik');
   const stepPin = document.getElementById('stepPin');
@@ -283,7 +300,7 @@
         return;
       }
 
-      currentPin = pin; // kept in memory only, needed to re-auth "Tambah Link"
+      currentPin = pin;
       await showMenu(data);
     } catch (err) {
       errPin.textContent = err.name === 'AbortError'
@@ -302,14 +319,18 @@
   }
 
   const LMS_INPUT_URL = 'https://docs.google.com/spreadsheets/d/1ua0mUAldrzpDuoEHHqA8X_4MseaMLSHJvpPvtSwmGo8/edit?gid=1726101465#gid=1726101465';
-  let pendingLmsUrl = ''; // set right before opening the LMS modal
+  let pendingLmsUrl = '';
 
   function renderTools(tools, isStaff) {
     const grid = document.getElementById('menuGrid');
     grid.innerHTML = '';
     tools.forEach((tool, i) => {
       const isLmsChoice = tool.name === 'LMS' && !isStaff;
-      const el = document.createElement(isLmsChoice ? 'div' : 'a');
+      // BARU: deteksi tool "Reload 360" secara khusus, biar klik-nya lewat SSO
+      // (minta token dulu ke Reload 360, baru buka linknya dengan token itu) alih-alih
+      // langsung buka link kosongan yang bakal nyuruh orangnya login PIN lagi di sana.
+      const isReload360Choice = tool.name.trim().toLowerCase() === 'reload 360';
+      const el = document.createElement((isLmsChoice || isReload360Choice) ? 'div' : 'a');
       el.className = 'card';
       if (isLmsChoice) {
         el.style.cursor = 'pointer';
@@ -317,6 +338,9 @@
           pendingLmsUrl = tool.url;
           document.getElementById('lmsModalOverlay').classList.remove('hidden');
         });
+      } else if (isReload360Choice) {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => openReload360Sso(tool.url));
       } else {
         el.href = tool.url;
         el.target = '_blank';
@@ -354,7 +378,6 @@
     const isStaff = currentTier === 'staff';
     renderTools(isStaff ? allTools.filter(t => t.staffVisible) : allTools, isStaff);
 
-    // "Tambah Link" is hidden for Staff
     document.getElementById('addToolBox').classList.toggle('hidden', isStaff);
   }
 
@@ -418,7 +441,6 @@
     currentPin = '';
   });
 
-  // Enter key support
   nikInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnNik').click(); });
   pinInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnPin').click(); });
 </script>
