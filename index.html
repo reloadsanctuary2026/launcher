@@ -217,30 +217,25 @@
 <script>
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKdkdGgd-JP5XELrcQJ28kJln-8lOvjYfmS4OgM0u7Jg6GfTD34qHlrh030JwqXT7maw/exec';
 
-  // ====== SSO ke Reload 360 (BARU ditambahkan) ======
-  // Ganti PASTE_URL_WEBAPP_RELOAD360_DI_SINI di bawah dengan URL Web App Apps Script
-  // milik Reload 360 (BEDA dari APPS_SCRIPT_URL di atas, yang itu punya Launcher sendiri).
-  const RELOAD360_APPS_SCRIPT_URL = https://script.google.com/macros/s/AKfycbwbSrk4qrekr8P7p9jTA1SCGqZG-p2HK7fur4yyCvNsgzecI_hEHsbQrvOy_QhRrV82/exec;
-  // Secret ini HARUS SAMA PERSIS dengan LAUNCHER_SSO_SHARED_SECRET di Code_LIVE.gs Reload 360.
+  const RELOAD360_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbSrk4qrekr8P7p9jTA1SCGqZG-p2HK7fur4yyCvNsgzecI_hEHsbQrvOy_QhRrV82/exec';
   const RELOAD360_SSO_SECRET = '7c19ef2f5e7987c3be6d1584354da26206c6b1d7267b0df9e30f1743abd1944d';
 
   async function openReload360Sso(reload360Url) {
     try {
-      const url = `${RELOAD360_APPS_SCRIPT_URL}?action=requestSsoSession&staffId=${encodeURIComponent(currentNik)}&sharedSecret=${encodeURIComponent(RELOAD360_SSO_SECRET)}`;
-      const res = await fetch(url);
+      const ssoUrl = RELOAD360_APPS_SCRIPT_URL + '?action=requestSsoSession&staffId=' + encodeURIComponent(currentNik) + '&sharedSecret=' + encodeURIComponent(RELOAD360_SSO_SECRET);
+      const res = await fetch(ssoUrl);
       const data = await res.json();
       if (!data.success) {
         alert('Gagal buka Reload 360: ' + (data.error || 'unknown error'));
         return;
       }
-      const target = reload360Url.includes('?') ? reload360Url + '&' : reload360Url + '?';
-      window.open(`${target}ssoToken=${encodeURIComponent(data.sessionToken)}&ssoStaffId=${encodeURIComponent(data.staffId)}`, '_blank', 'noopener');
+      const sep = reload360Url.indexOf('?') !== -1 ? '&' : '?';
+      window.open(reload360Url + sep + 'ssoToken=' + encodeURIComponent(data.sessionToken) + '&ssoStaffId=' + encodeURIComponent(data.staffId), '_blank', 'noopener');
     } catch (err) {
       console.error(err);
       alert('Gagal konek ke Reload 360, coba lagi.');
     }
   }
-  // ====== akhir bagian SSO ======
 
   let currentNik = '';
   let currentPin = '';
@@ -250,6 +245,7 @@
     nikInput.value = '';
     pinInput.value = '';
   });
+
 
   const stepNik = document.getElementById('stepNik');
   const stepPin = document.getElementById('stepPin');
@@ -326,9 +322,6 @@
     grid.innerHTML = '';
     tools.forEach((tool, i) => {
       const isLmsChoice = tool.name === 'LMS' && !isStaff;
-      // BARU: deteksi tool "Reload 360" secara khusus, biar klik-nya lewat SSO
-      // (minta token dulu ke Reload 360, baru buka linknya dengan token itu) alih-alih
-      // langsung buka link kosongan yang bakal nyuruh orangnya login PIN lagi di sana.
       const isReload360Choice = tool.name.trim().toLowerCase() === 'reload 360';
       const el = document.createElement((isLmsChoice || isReload360Choice) ? 'div' : 'a');
       el.className = 'card';
