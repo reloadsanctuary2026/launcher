@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reload F&amp;B Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d0f0e;
+    --bg-panel: #161917;
+    --line: #262b27;
+    --text: #f2f1ec;
+    --muted: #8b9188;
+    --accent: #d6ff3f;
+    --accent-dim: #8fb32a;
+    --danger: #ef5b5b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    min-height: 100vh;
+  }
+  .mark{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--accent-dim);
+    text-transform: uppercase;
+    text-align: center;
+  }
+  h1{
+    font-size: 32px;
+    font-weight: 800;
+    text-align: center;
+    margin-top: 10px;
+    letter-spacing: -0.02em;
+  }
+  h1 span{ color: var(--accent); }
+
+  /* ---------- Login card ---------- */
+  .login-card{
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px 24px;
+    margin-top: 40px;
+  }
+  label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    display:block;
+    margin-bottom: 8px;
+  }
+  input{
+    width:100%;
+    font-family:'Poppins', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.05em;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--text);
+    margin-bottom: 18px;
+  }
+  input:focus{ outline: none; border-color: var(--accent); }
+  button{
+    width:100%;
+    font-family:'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: var(--bg);
+    cursor: pointer;
+    transition: transform .12s ease;
+  }
+  button:hover{ transform: translateY(-1px); }
+  button:disabled{ opacity: .5; cursor: default; transform:none; }
+  .error-msg{
+    color: var(--danger);
+    font-size: 13px;
+    margin-top: 14px;
+    text-align: center;
+    min-height: 18px;
+  }
+  .back-link{
+    display:block;
+    text-align:center;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* ---------- Welcome / menu ---------- */
+  .welcome{
+    text-align:center;
+    margin-top: 40px;
+  }
+  .welcome .hi{
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .welcome .role{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+  }
+  .grid{
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .card{
+    position: relative;
+    display: block;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color .18s ease, transform .18s ease;
+  }
+  .card:hover{ border-color: #3a4038; transform: translateY(-2px); }
+  .card h2{ font-size: 16px; font-weight: 700; margin-top: 6px; }
+  .card .go{ margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--accent); }
+  .logout{
+    display:block;
+    text-align:center;
+    margin-top: 36px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mark">Reload Sanctuary</div>
+    <h1>Reload F&amp;B <span>Tools</span></h1>
+
+    <!-- STEP 1: NIK -->
+    <div id="stepNik" class="login-card">
+      <label for="nikInput">Masukkan NIK</label>
+      <input id="nikInput" type="text" inputmode="numeric" placeholder="Contoh: 1046" autofocus>
+      <button id="btnNik">Lanjut</button>
+      <div class="error-msg" id="errNik"></div>
+    </div>
+
+    <!-- STEP 2: PIN -->
+    <div id="stepPin" class="login-card hidden">
+      <label for="pinInput">Masukkan PIN</label>
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="••••">
+      <button id="btnPin">Login</button>
+      <div class="error-msg" id="errPin"></div>
+      <span class="back-link" id="backToNik">← ganti NIK</span>
+    </div>
+
+    <!-- STEP 3: Welcome + Menu -->
+    <div id="stepMenu" class="hidden">
+      <div class="welcome">
+        <div class="hi">Welcome, <span id="nicknameOut"></span>!</div>
+        <div class="role" id="tierOut"></div>
+      </div>
+      <div class="grid" id="menuGrid"></div>
+      <span class="logout" id="logoutLink">Logout</span>
+    </div>
+  </div>
+
+<script>
+  // TODO: paste the Apps Script Web App /exec URL here after deploying Code.gs
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKdkdGgd-JP5XELrcQJ28kJln-8lOvjYfmS4OgM0u7Jg6GfTD34qHlrh030JwqXT7maw/exec';
+
+  const TOOLS = [
+    { name: 'Reload 360',       url: 'https://reloadsanctuary2026.github.io/fnbappraisal/', staffVisible: true  },
+    { name: 'Daily Consumption',url: 'https://reloadsanctuary2026.github.io/dailyconsumption/', staffVisible: true },
+    { name: 'LMS',              url: 'https://script.google.com/macros/s/AKfycbx7ID6GZMXYoj8ymmwAcGuxHWb-hGli-FRDqcDgazgIL38JOT4jbARBht85PFosc34a_Q/exec', staffVisible: true },
+    { name: 'BA Generator',     url: 'https://reloadsanctuary2026.github.io/beritaacara/', staffVisible: false },
+    { name: 'Auto Section',     url: 'https://reloadsanctuary2026.github.io/autosection/', staffVisible: false },
+    { name: 'QR Generator',     url: 'https://reloadsanctuary2026.github.io/qrgenerator/', staffVisible: false },
+    { name: 'Upsell Tracker',   url: 'https://reload-upsell-tracker.adiwijaya2807.chatgpt.site/tracker-v12', staffVisible: false }
+  ];
+
+  let currentNik = '';
+
+  const stepNik = document.getElementById('stepNik');
+  const stepPin = document.getElementById('stepPin');
+  const stepMenu = document.getElementById('stepMenu');
+  const nikInput = document.getElementById('nikInput');
+  const pinInput = document.getElementById('pinInput');
+  const errNik = document.getElementById('errNik');
+  const errPin = document.getElementById('errPin');
+
+  document.getElementById('btnNik').addEventListener('click', () => {
+    const nik = nikInput.value.trim();
+    errNik.textContent = '';
+    if (!nik) { errNik.textContent = 'NIK wajib diisi'; return; }
+    currentNik = nik;
+    stepNik.classList.add('hidden');
+    stepPin.classList.remove('hidden');
+    pinInput.value = '';
+    pinInput.focus();
+  });
+
+  document.getElementById('backToNik').addEventListener('click', () => {
+    stepPin.classList.add('hidden');
+    stepNik.classList.remove('hidden');
+    errPin.textContent = '';
+  });
+
+  document.getElementById('btnPin').addEventListener('click', async () => {
+    const pin = pinInput.value.trim();
+    errPin.textContent = '';
+    if (!pin) { errPin.textContent = 'PIN wajib diisi'; return; }
+
+    const btn = document.getElementById('btnPin');
+    btn.disabled = true;
+    btn.textContent = 'Memeriksa...';
+
+    try {
+      const body = new URLSearchParams({ action: 'login', nik: currentNik, pin: pin });
+      const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body });
+      const data = await res.json();
+
+      if (!data.success) {
+        errPin.textContent = data.message || 'Login gagal';
+        btn.disabled = false;
+        btn.textContent = 'Login';
+        return;
+      }
+
+      showMenu(data);
+    } catch (err) {
+      errPin.textContent = 'Gagal konek ke server. Coba lagi.';
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    }
+  });
+
+  function showMenu(user) {
+    stepPin.classList.add('hidden');
+    stepMenu.classList.remove('hidden');
+    document.getElementById('nicknameOut').textContent = user.nickname || '-';
+    document.getElementById('tierOut').textContent = (user.tier || 'Staff').toUpperCase();
+
+    const isStaff = (user.tier || '').trim().toLowerCase() === 'staff';
+    const visibleTools = isStaff ? TOOLS.filter(t => t.staffVisible) : TOOLS;
+
+    const grid = document.getElementById('menuGrid');
+    grid.innerHTML = '';
+    visibleTools.forEach((tool, i) => {
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = tool.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.innerHTML = `
+        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--muted);">TOOL / ${String(i+1).padStart(2,'0')}</div>
+        <h2>${tool.name}</h2>
+        <div class="go">Buka tool →</div>
+      `;
+      grid.appendChild(a);
+    });
+  }
+
+  document.getElementById('logoutLink').addEventListener('click', () => {
+    stepMenu.classList.add('hidden');
+    stepNik.classList.remove('hidden');
+    nikInput.value = '';
+    pinInput.value = '';
+    currentNik = '';
+  });
+
+  // Enter key support
+  nikInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnNik').click(); });
+  pinInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnPin').click(); });
+</script>
+</body>
+</html>
